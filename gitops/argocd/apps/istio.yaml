@@ -10,8 +10,8 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   ignoreDifferences:
-    - group: apps
-      kind: admissionregistration.k8s.io
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
       name: istiod-default-validator
 
   project: default
