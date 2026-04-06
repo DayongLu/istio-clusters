@@ -4,7 +4,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: istio-base
+  name: istio-base-use1
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -38,7 +38,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: istiod
+  name: istiod-use1
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
