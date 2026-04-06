@@ -23,7 +23,7 @@ spec:
     chart: base
     targetRevision: 1.29.1 # Update to your desired Istio version
   destination:
-    server: 'https://kubernetes.default.svc'
+    server: 'eks-auto-cluster-use1'
     namespace: istio-system
   syncPolicy:
     automated:
@@ -56,7 +56,7 @@ spec:
     chart: istiod
     targetRevision: 1.29.1 # Must match the base version
   destination:
-    server: 'https://kubernetes.default.svc'
+    server: 'eks-auto-cluster-use1'
     namespace: istio-system
   syncPolicy:
     automated:

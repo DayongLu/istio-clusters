@@ -1,0 +1,66 @@
+---
+# 1. Istio Base (Contains CRDs and cluster roles)
+# Must be installed first.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-base
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istiod-default-validator
+      jqPathExpressions:
+        - '.webhooks[].clientConfig.caBundle'
+        - '.webhooks[].failurePolicy'
+
+  project: default
+  source:
+    repoURL: 'https://istio-release.storage.googleapis.com/charts'
+    chart: base
+    targetRevision: 1.29.1 # Update to your desired Istio version
+  destination:
+    server: 'eks-auto-cluster-use2'
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+---
+# 2. Istiod (The Control Plane)
+# Installed second, after the CRDs are ready.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istiod
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istio-validator-istio-system
+      jqPathExpressions:
+        - '.webhooks[].clientConfig.caBundle'
+        - '.webhooks[].failurePolicy'
+  project: default
+  source:
+    repoURL: 'https://istio-release.storage.googleapis.com/charts'
+    chart: istiod
+    targetRevision: 1.29.1 # Must match the base version
+  destination:
+    server: 'eks-auto-cluster-use2'
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
