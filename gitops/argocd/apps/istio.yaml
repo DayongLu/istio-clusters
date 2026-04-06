@@ -47,6 +47,9 @@ spec:
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
       name: istio-validator-istio-system
+      jqPathExpressions:
+        - '.webhooks[].clientConfig.caBundle'
+        - '.webhooks[].failurePolicy'
   project: default
   source:
     repoURL: 'https://istio-release.storage.googleapis.com/charts'
