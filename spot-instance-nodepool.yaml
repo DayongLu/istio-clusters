@@ -1,0 +1,32 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: spot-only-pool
+spec:
+  template:
+    metadata:
+      # Optional: Add a label to easily target this pool from your deployments
+      labels:
+        workload-type: spot-compute
+    spec:
+      nodeClassRef:
+        group: eks.amazonaws.com
+        kind: NodeClass
+        # Change this to your custom NodeClass name if you created one, 
+        # otherwise 'default' uses the built-in EKS Auto Mode NodeClass
+        name: default 
+      requirements:
+        # 1. Strictly restrict this pool to Spot instances
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot"]
+          
+        # 2. Define acceptable instance categories (optional but recommended for Spot diversification)
+        - key: eks.amazonaws.com/instance-category
+          operator: In
+          values: ["c", "m", "r", "t"]
+          
+        # 3. Define architecture
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]

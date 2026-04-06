@@ -1,0 +1,10 @@
+server:
+  service:
+    type: LoadBalancer
+    annotations:
+      # This annotation tells EKS Auto Mode to provision an internet-facing public NLB
+      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+
+global:
+  nodeSelector:
+    karpenter.sh/capacity-type: spot

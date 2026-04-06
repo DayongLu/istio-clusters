@@ -1,0 +1,17 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+.terraformrc
+terraform.rc
+
+# Crash Log
+crash.log
+
+# Macos
+.DS_Store
