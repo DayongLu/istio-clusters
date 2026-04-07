@@ -91,6 +91,7 @@ spec:
     targetRevision: 1.29.1 # Must match the base version
     helm:
       values: |
+        networkGateway: use1-network
         service:
           annotations:
             # Trigger the AWS NLB
