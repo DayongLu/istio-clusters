@@ -45,10 +45,9 @@ resource "aws_subnet" "use1_subnet_a" {
   vpc_id                  = aws_vpc.use1_vpc.id
   cidr_block              = "10.1.1.0/24"
   availability_zone       = "us-east-1a"
-  map_public_ip_on_launch = true # Required for nodes to pull images if no NAT is used
+  map_public_ip_on_launch = false # Required for nodes to pull images if no NAT is used
     tags = {
       Name                   = "eks-auto-subnet-use1-a"
-      "kubernetes.io/role/elb" = "1"
     }
 }
 
@@ -56,16 +55,59 @@ resource "aws_subnet" "use1_subnet_b" {
   vpc_id                  = aws_vpc.use1_vpc.id
   cidr_block              = "10.1.2.0/24"
   availability_zone       = "us-east-1b"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
     tags = {
       Name                   = "eks-auto-subnet-use1-b"
-      "kubernetes.io/role/elb" = "1"
     }
+}
+
+resource "aws_subnet" "use1_subnet_c" {
+  vpc_id                  = aws_vpc.use1_vpc.id
+  cidr_block              = "10.1.3.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = false # This is a private subnet
+  tags = {
+    Name                             = "eks-auto-private-subnet-use1-c"
+    "kubernetes.io/role/internal-elb" = "1"
+  }
+}
+
+resource "aws_subnet" "use1_subnet_d" {
+  vpc_id                  = aws_vpc.use1_vpc.id
+  cidr_block              = "10.1.4.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = false # This is a private subnet
+  tags = {
+    Name                             = "eks-auto-private-subnet-use1-d"
+    "kubernetes.io/role/internal-elb" = "1"
+  }
 }
 
 resource "aws_internet_gateway" "use1_igw" {
   vpc_id = aws_vpc.use1_vpc.id
   tags   = { Name = "eks-auto-igw-use1" }
+}
+
+resource "aws_subnet" "use1_public_subnet_a" {
+  vpc_id                  = aws_vpc.use1_vpc.id
+  cidr_block              = "10.1.5.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = false
+  tags = {
+    Name                   = "eks-auto-public-subnet-use1-a"
+    "kubernetes.io/role/elb" = "1"
+  }
+}
+
+resource "aws_subnet" "use1_public_subnet_b" {
+  vpc_id                  = aws_vpc.use1_vpc.id
+  cidr_block              = "10.1.6.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = false
+  tags = {
+    Name                   = "eks-auto-public-subnet-use1-b"
+    "kubernetes.io/role/elb" = "1"
+  }
 }
 
 resource "aws_route_table" "use1_rt" {
@@ -79,14 +121,58 @@ resource "aws_route" "use1_igw_route" {
   gateway_id             = aws_internet_gateway.use1_igw.id
 }
 
+resource "aws_route_table_association" "use1_public_rta_a" {
+  subnet_id      = aws_subnet.use1_public_subnet_a.id
+  route_table_id = aws_route_table.use1_rt.id
+}
+
+resource "aws_route_table_association" "use1_public_rta_b" {
+  subnet_id      = aws_subnet.use1_public_subnet_b.id
+  route_table_id = aws_route_table.use1_rt.id
+}
+
 resource "aws_route_table_association" "use1_rta_a" {
   subnet_id      = aws_subnet.use1_subnet_a.id
-  route_table_id = aws_route_table.use1_rt.id
+  route_table_id = aws_route_table.use1_private_rt.id
 }
 
 resource "aws_route_table_association" "use1_rta_b" {
   subnet_id      = aws_subnet.use1_subnet_b.id
-  route_table_id = aws_route_table.use1_rt.id
+  route_table_id = aws_route_table.use1_private_rt.id
+}
+
+resource "aws_route_table" "use1_private_rt" {
+  vpc_id = aws_vpc.use1_vpc.id
+  tags   = { Name = "eks-auto-private-rt-use1" }
+}
+
+resource "aws_route" "use1_private_nat_gw_route" {
+  route_table_id         = aws_route_table.use1_private_rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.use1_nat_gw.id
+}
+
+resource "aws_route_table_association" "use1_rta_c" {
+  subnet_id      = aws_subnet.use1_subnet_c.id
+  route_table_id = aws_route_table.use1_private_rt.id
+}
+
+resource "aws_route_table_association" "use1_rta_d" {
+  subnet_id      = aws_subnet.use1_subnet_d.id
+  route_table_id = aws_route_table.use1_private_rt.id
+}
+
+resource "aws_eip" "use1_nat_eip" {
+  domain = "vpc"
+  tags   = { Name = "eks-auto-nat-eip-use1" }
+}
+
+resource "aws_nat_gateway" "use1_nat_gw" {
+  allocation_id = aws_eip.use1_nat_eip.id
+  subnet_id     = aws_subnet.use1_public_subnet_a.id
+  tags          = { Name = "eks-auto-nat-gw-use1" }
+
+  depends_on = [aws_internet_gateway.use1_igw]
 }
 
 # ==========================================
@@ -105,10 +191,9 @@ resource "aws_subnet" "use2_subnet_a" {
   vpc_id                  = aws_vpc.use2_vpc.id
   cidr_block              = "10.2.1.0/24"
   availability_zone       = "us-east-2a"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
     tags = {
       Name                   = "eks-auto-subnet-use2-a"
-      "kubernetes.io/role/elb" = "1"
     }
 }
 
@@ -117,17 +202,64 @@ resource "aws_subnet" "use2_subnet_b" {
   vpc_id                  = aws_vpc.use2_vpc.id
   cidr_block              = "10.2.2.0/24"
   availability_zone       = "us-east-2b"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
     tags = {
       Name                   = "eks-auto-subnet-use2-b"
-      "kubernetes.io/role/elb" = "1"
     }
+}
+
+resource "aws_subnet" "use2_subnet_c" {
+  provider                = aws.use2
+  vpc_id                  = aws_vpc.use2_vpc.id
+  cidr_block              = "10.2.3.0/24"
+  availability_zone       = "us-east-2a"
+  map_public_ip_on_launch = false # This is a private subnet
+  tags = {
+    Name                             = "eks-auto-private-subnet-use2-c"
+    "kubernetes.io/role/internal-elb" = "1"
+  }
+}
+
+resource "aws_subnet" "use2_subnet_d" {
+  provider                = aws.use2
+  vpc_id                  = aws_vpc.use2_vpc.id
+  cidr_block              = "10.2.4.0/24"
+  availability_zone       = "us-east-2b"
+  map_public_ip_on_launch = false # This is a private subnet
+  tags = {
+    Name                             = "eks-auto-private-subnet-use2-d"
+    "kubernetes.io/role/internal-elb" = "1"
+  }
 }
 
 resource "aws_internet_gateway" "use2_igw" {
   provider = aws.use2
   vpc_id   = aws_vpc.use2_vpc.id
   tags     = { Name = "eks-auto-igw-use2" }
+}
+
+resource "aws_subnet" "use2_public_subnet_a" {
+  provider                = aws.use2
+  vpc_id                  = aws_vpc.use2_vpc.id
+  cidr_block              = "10.2.5.0/24"
+  availability_zone       = "us-east-2a"
+  map_public_ip_on_launch = false
+  tags = {
+    Name                   = "eks-auto-public-subnet-use2-a"
+    "kubernetes.io/role/elb" = "1"
+  }
+}
+
+resource "aws_subnet" "use2_public_subnet_b" {
+  provider                = aws.use2
+  vpc_id                  = aws_vpc.use2_vpc.id
+  cidr_block              = "10.2.6.0/24"
+  availability_zone       = "us-east-2b"
+  map_public_ip_on_launch = false
+  tags = {
+    Name                   = "eks-auto-public-subnet-use2-b"
+    "kubernetes.io/role/elb" = "1"
+  }
 }
 
 resource "aws_route_table" "use2_rt" {
@@ -143,16 +275,68 @@ resource "aws_route" "use2_igw_route" {
   gateway_id             = aws_internet_gateway.use2_igw.id
 }
 
+resource "aws_route_table_association" "use2_public_rta_a" {
+  provider       = aws.use2
+  subnet_id      = aws_subnet.use2_public_subnet_a.id
+  route_table_id = aws_route_table.use2_rt.id
+}
+
+resource "aws_route_table_association" "use2_public_rta_b" {
+  provider       = aws.use2
+  subnet_id      = aws_subnet.use2_public_subnet_b.id
+  route_table_id = aws_route_table.use2_rt.id
+}
+
 resource "aws_route_table_association" "use2_rta_a" {
   provider       = aws.use2
   subnet_id      = aws_subnet.use2_subnet_a.id
-  route_table_id = aws_route_table.use2_rt.id
+  route_table_id = aws_route_table.use2_private_rt.id
 }
 
 resource "aws_route_table_association" "use2_rta_b" {
   provider       = aws.use2
   subnet_id      = aws_subnet.use2_subnet_b.id
-  route_table_id = aws_route_table.use2_rt.id
+  route_table_id = aws_route_table.use2_private_rt.id
+}
+
+resource "aws_route_table" "use2_private_rt" {
+  provider = aws.use2
+  vpc_id   = aws_vpc.use2_vpc.id
+  tags     = { Name = "eks-auto-private-rt-use2" }
+}
+
+resource "aws_route" "use2_private_nat_gw_route" {
+  provider               = aws.use2
+  route_table_id         = aws_route_table.use2_private_rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.use2_nat_gw.id
+}
+
+resource "aws_route_table_association" "use2_rta_c" {
+  provider       = aws.use2
+  subnet_id      = aws_subnet.use2_subnet_c.id
+  route_table_id = aws_route_table.use2_private_rt.id
+}
+
+resource "aws_route_table_association" "use2_rta_d" {
+  provider       = aws.use2
+  subnet_id      = aws_subnet.use2_subnet_d.id
+  route_table_id = aws_route_table.use2_private_rt.id
+}
+
+resource "aws_eip" "use2_nat_eip" {
+  provider = aws.use2
+  domain   = "vpc"
+  tags     = { Name = "eks-auto-nat-eip-use2" }
+}
+
+resource "aws_nat_gateway" "use2_nat_gw" {
+  provider      = aws.use2
+  allocation_id = aws_eip.use2_nat_eip.id
+  subnet_id     = aws_subnet.use2_public_subnet_a.id
+  tags          = { Name = "eks-auto-nat-gw-use2" }
+
+  depends_on = [aws_internet_gateway.use2_igw]
 }
 
 # ==========================================
@@ -253,7 +437,14 @@ resource "aws_eks_cluster" "eks_use1" {
   version  = "1.33"
 
   vpc_config {
-    subnet_ids              = [aws_subnet.use1_subnet_a.id, aws_subnet.use1_subnet_b.id]
+    subnet_ids              = [
+      aws_subnet.use1_subnet_a.id, 
+      aws_subnet.use1_subnet_b.id,
+      aws_subnet.use1_subnet_c.id,
+      aws_subnet.use1_subnet_d.id,
+      aws_subnet.use1_public_subnet_a.id,
+      aws_subnet.use1_public_subnet_b.id
+    ]
     endpoint_private_access = true
     endpoint_public_access  = true
   }
@@ -299,7 +490,14 @@ resource "aws_eks_cluster" "eks_use2" {
   version  = "1.33"
 
   vpc_config {
-    subnet_ids              = [aws_subnet.use2_subnet_a.id, aws_subnet.use2_subnet_b.id]
+    subnet_ids              = [
+      aws_subnet.use2_subnet_a.id,
+      aws_subnet.use2_subnet_b.id,
+      aws_subnet.use2_subnet_c.id,
+      aws_subnet.use2_subnet_d.id,
+      aws_subnet.use2_public_subnet_a.id,
+      aws_subnet.use2_public_subnet_b.id
+    ]
     endpoint_private_access = true
     endpoint_public_access  = true
   }

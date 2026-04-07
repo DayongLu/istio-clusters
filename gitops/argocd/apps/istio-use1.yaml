@@ -92,7 +92,6 @@ spec:
     helm:
       values: |
         service:
-          type: LoadBalancer
           annotations:
             # Trigger the AWS NLB
             service.beta.kubernetes.io/aws-load-balancer-type: "external"
@@ -106,16 +105,6 @@ spec:
         labels:
           istio: eastwestgateway
           topology.istio.io/network: use1-network
-        ports:
-          - name: status-port
-            port: 15021
-            targetPort: 15021
-          - name: mtls
-            port: 15443
-            targetPort: 15443
-          - name: tls
-            port: 15012
-            targetPort: 15012
   destination:
     name: 'eks-auto-cluster-use1'
     namespace: istio-system

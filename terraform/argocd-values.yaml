@@ -2,8 +2,15 @@ server:
   service:
     type: LoadBalancer
     annotations:
-      # This annotation tells EKS Auto Mode to provision an internet-facing public NLB
+      # Specify the load balancer type as "external" for a public-facing load balancer.
+      service.beta.kubernetes.io/aws-load-balancer-type: "external"
+
+      # Specify the load balancer scheme as "internet-facing" for a public NLB.
       service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+
+      # Specify the target type for the NLB. "ip" is recommended for most use cases.
+      # It routes traffic directly to the pod's IP address.
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
 
 global:
   nodeSelector:
