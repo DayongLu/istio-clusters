@@ -16,7 +16,7 @@ spec:
       project: default
       source:
         repoURL: 'https://github.com/DayongLu/istio-clusters.git' # TODO: Replace with your actual GitHub repo URL if different
-        targetRevision: main
+        targetRevision: HEAD
         path: gitops/applications/sample
       destination:
         name: '{{cluster}}'
@@ -25,3 +25,5 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
