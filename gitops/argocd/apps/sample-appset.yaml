@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: sample-app
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: eks-auto-cluster-use1
+          - cluster: eks-auto-cluster-use2
+  template:
+    metadata:
+      name: 'sample-app-{{cluster}}'
+    spec:
+      project: default
+      source:
+        repoURL: 'https://github.com/DayongLu/istio-clusters.git' # TODO: Replace with your actual GitHub repo URL if different
+        targetRevision: main
+        path: gitops/applications/sample
+      destination:
+        name: '{{cluster}}'
+        namespace: sample
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
