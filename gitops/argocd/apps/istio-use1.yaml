@@ -115,3 +115,26 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+
+---
+# 4. Istio Configuration (Gateways, VirtualServices, etc.)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-config-use1
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/DayongLu/istio-clusters.git' # TODO: Replace with your actual GitHub repo URL
+    targetRevision: main # or "main"
+    path: gitops/istio/eks-use1
+  destination:
+    name: 'eks-auto-cluster-use1'
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
