@@ -55,6 +55,14 @@ spec:
     repoURL: 'https://istio-release.storage.googleapis.com/charts'
     chart: istiod
     targetRevision: 1.29.1 # Must match the base version
+    helm:
+      parameters:
+        - name: global.meshID
+          value: mesh1
+        - name: global.multiCluster.clusterName
+          value: eks-auto-cluster-use2
+        - name: global.network
+          value: use2-network
   destination:
     name: 'eks-auto-cluster-use2'
     namespace: istio-system
@@ -64,3 +72,69 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+
+---
+# 3. Istiod east west gateway
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-east-west-gateway-use2
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: 'https://istio-release.storage.googleapis.com/charts'
+    chart: gateway
+    targetRevision: 1.29.1 # Must match the base version
+    helm:
+      values: |
+        networkGateway: use2-network
+        service:
+          annotations:
+            # Trigger the AWS NLB
+            service.beta.kubernetes.io/aws-load-balancer-type: "external"
+            service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+            service.beta.kubernetes.io/aws-load-balancer-scheme: "internal" # Typical for East-West
+            
+            # Optional: Health check tuning (Istio uses 15021 for status)
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "15021"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTP"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/healthz/ready"
+        labels:
+          istio: eastwestgateway
+          topology.istio.io/network: use2-network
+  destination:
+    name: 'eks-auto-cluster-use2'
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+---
+# 4. Istio Configuration (Gateways, VirtualServices, etc.)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-config-use2
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/DayongLu/istio-clusters.git' # TODO: Replace with your actual GitHub repo URL
+    targetRevision: main # or "main"
+    path: gitops/istio/eks-use2
+  destination:
+    name: 'eks-auto-cluster-use2'
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
